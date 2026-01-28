@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -32,7 +31,7 @@ class StudyAttendanceApp extends StatelessWidget {
         Provider<FirestoreService>(create: (_) => FirestoreService()),
       ],
       child: MaterialApp(
-        title: 'Mobile-Based Study Session Attendance',
+        title: 'BAROKAH PRESENSI',
         theme: _appTheme,
         home: const AuthGate(),
         routes: {

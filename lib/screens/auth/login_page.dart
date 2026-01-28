@@ -89,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Sistem Presensi PPM Jogja',
+                  'Barokah Presensi',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -98,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Masuk dan catat kehadiran Anda.',
+                  'Login dulu guys',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.white70,
@@ -177,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
                                       context,
                                       RegisterPage.routeName,
                                     ),
-                            child: const Text('Belum punya akun? Daftar dulu yak'),
+                            child: const Text('Belum punya akun? Daftar dulu yok'),
                           ),
                         ],
                       ),

@@ -69,6 +69,26 @@ class FirestoreService {
     });
   }
 
+  Future<List<UserProfile>> fetchParticipantsOnce() async {
+    final snapshot = await _users.where('role', isEqualTo: 'peserta').get();
+    return snapshot.docs.map((doc) => UserProfile.fromMap(doc.data())).toList();
+  }
+
+  Future<void> saveFaceTemplate({
+    required String uid,
+    required List<double> embedding,
+    String? faceImage,
+  }) async {
+    await _users.doc(uid).set(
+      {
+        'faceEmbedding': embedding,
+        if (faceImage != null) 'faceImage': faceImage,
+        'faceUpdatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> markAttendance({
     required String sessionId,
     required UserProfile user,

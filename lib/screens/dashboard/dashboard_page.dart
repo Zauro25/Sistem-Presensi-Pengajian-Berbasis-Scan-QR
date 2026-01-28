@@ -5,14 +5,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../models/attendance_record.dart';
 import '../../models/study_session.dart';
-import '../../models/teacher.dart';
 import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../auth/login_page.dart';
 import '../pengurus/session_detail_page.dart';
 import '../pengurus/session_form_page.dart';
-import '../pengurus/teacher_form_sheet.dart';
 import '../peserta/scan_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -30,7 +28,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: widget.profile.role == UserRole.pengurus ? 4 : 2,
+      length: widget.profile.role == UserRole.pengurus ? 3 : 2,
       vsync: this,
     );
   }
@@ -47,7 +45,6 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     final tabs = isPengurus
         ? const [
             Tab(text: 'Sesi'),
-            Tab(text: 'Ustadz'),
             Tab(text: 'Peserta'),
             Tab(text: 'Rekap'),
           ]
@@ -84,7 +81,6 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
         children: isPengurus
             ? [
                 _SessionsTab(profile: widget.profile),
-                _TeachersTab(profile: widget.profile),
                 _ParticipantsTab(),
                 _ReportsTab(profile: widget.profile),
               ]
@@ -254,61 +250,6 @@ class _SessionCard extends StatelessWidget {
   }
 }
 
-class _TeachersTab extends StatelessWidget {
-  const _TeachersTab({required this.profile});
-  final UserProfile profile;
-
-  @override
-  Widget build(BuildContext context) {
-    final firestore = context.read<FirestoreService>();
-    return StreamBuilder<List<Teacher>>(
-      stream: firestore.watchTeachers(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final teachers = snapshot.data ?? [];
-        return Stack(
-          children: [
-            ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: teachers.length,
-              itemBuilder: (context, index) {
-                final teacher = teachers[index];
-                return ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person)),
-                  title: Text(teacher.name),
-                  subtitle: Text(teacher.topic ?? 'Topik belum diisi'),
-                );
-              },
-            ),
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: FloatingActionButton.extended(
-                icon: const Icon(Icons.add),
-                label: const Text('Tambah'),
-                onPressed: () async {
-                  await showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => Padding(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
-                      ),
-                      child: TeacherFormSheet(profile: profile),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
 class _ParticipantsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -320,6 +261,9 @@ class _ParticipantsTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         final participants = snapshot.data ?? [];
+        if (participants.isEmpty) {
+          return const Center(child: Text('Belum ada peserta.'));
+        }
         return ListView.separated(
           padding: const EdgeInsets.all(16),
           separatorBuilder: (_, __) => const Divider(height: 1),
@@ -365,7 +309,6 @@ class _ReportsTabState extends State<_ReportsTab> {
             stream: firestore.watchSessions(),
             builder: (context, snapshot) {
               final sessions = snapshot.data ?? [];
-              // Update _selected reference if it exists in new list
               if (_selected != null && sessions.isNotEmpty) {
                 final match = sessions.where((s) => s.id == _selected!.id);
                 if (match.isNotEmpty) {
@@ -400,7 +343,6 @@ class _ReportsTabState extends State<_ReportsTab> {
                         setState(() => _exporting = true);
                         final csv = await firestore.generateCsvForSession(_selected!.id);
                         if (!mounted) return;
-                        // ignore: use_build_context_synchronously
                         await _showCsvDialog(context, csv);
                         setState(() => _exporting = false);
                       },
@@ -479,7 +421,11 @@ class _PesertaScanTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('Riwayat terakhir'),
+          const Text(
+            'Riwayat terakhir',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           Expanded(child: _HistoryList(profile: profile)),
         ],
@@ -508,26 +454,37 @@ class _HistoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firestore = context.read<FirestoreService>();
-    return StreamBuilder<List<AttendanceRecord>>(
-      stream: firestore.watchAttendanceForUser(profile.uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return StreamBuilder<List<StudySession>>(
+      stream: firestore.watchSessions(),
+      builder: (context, sessionSnap) {
+        if (sessionSnap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final records = snapshot.data ?? [];
-        if (records.isEmpty) {
-          return const Center(child: Text('Belum ada riwayat.'));
-        }
-        return ListView.separated(
-          itemCount: records.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final rec = records[index];
-            final date = DateFormat('dd MMM yyyy HH:mm').format(rec.timestamp);
-            return ListTile(
-              leading: const Icon(Icons.check_circle, color: Colors.teal),
-              title: Text('Sesi: ${rec.sessionId}'),
-              subtitle: Text('Metode: ${rec.method} · $date'),
+        final sessions = sessionSnap.data ?? [];
+        final sessionMap = {for (final s in sessions) s.id: s.title};
+        return StreamBuilder<List<AttendanceRecord>>(
+          stream: firestore.watchAttendanceForUser(profile.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final records = snapshot.data ?? [];
+            if (records.isEmpty) {
+              return const Center(child: Text('Belum ada riwayat.'));
+            }
+            return ListView.separated(
+              itemCount: records.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final rec = records[index];
+                final date = DateFormat('dd MMM yyyy HH:mm').format(rec.timestamp);
+                final title = sessionMap[rec.sessionId] ?? rec.sessionId;
+                return ListTile(
+                  leading: const Icon(Icons.check_circle, color: Colors.teal),
+                  title: Text('Sesi: $title'),
+                  subtitle: Text('Waktu: $date'),
+                );
+              },
             );
           },
         );

@@ -58,18 +58,23 @@ class _SessionDetailContentState extends State<_SessionDetailContent> {
                   Text('Jadwal: ${DateFormat('dd MMM yyyy HH:mm').format(widget.session.scheduledAt)}'),
                 ],
               ),
-              ElevatedButton.icon(
-                onPressed: _exporting
-                    ? null
-                    : () async {
-                        setState(() => _exporting = true);
-                        final csv = await firestore.generateCsvForSession(widget.session.id);
-                        if (!mounted) return;
-                        await Share.share(csv, subject: 'Rekap ${widget.session.title}');
-                        setState(() => _exporting = false);
-                      },
-                icon: const Icon(Icons.file_download),
-                label: Text(_exporting ? 'Memproses...' : 'Bagikan CSV'),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _exporting
+                        ? null
+                        : () async {
+                            setState(() => _exporting = true);
+                            final csv = await firestore.generateCsvForSession(widget.session.id);
+                            if (!mounted) return;
+                            await Share.share(csv, subject: 'Rekap ${widget.session.title}');
+                            setState(() => _exporting = false);
+                          },
+                    icon: const Icon(Icons.file_download),
+                    label: Text(_exporting ? 'Memproses...' : 'Bagikan CSV'),
+                  ),
+                ],
               ),
             ],
           ),

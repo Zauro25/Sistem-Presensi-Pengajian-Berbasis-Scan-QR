@@ -17,6 +17,8 @@ class UserProfile {
     required this.role,
     this.phone,
     this.createdAt,
+    this.faceEmbedding,
+    this.faceImage,
   });
 
   final String uid;
@@ -25,6 +27,8 @@ class UserProfile {
   final UserRole role;
   final String? phone;
   final DateTime? createdAt;
+  final List<double>? faceEmbedding;
+  final String? faceImage;
 
   String get displayRole => role == UserRole.pengurus ? 'Pengurus' : 'Peserta';
 
@@ -36,6 +40,8 @@ class UserProfile {
       'role': role.name,
       'phone': phone,
       'createdAt': createdAt ?? DateTime.now(),
+      if (faceEmbedding != null) 'faceEmbedding': faceEmbedding,
+      if (faceImage != null) 'faceImage': faceImage,
     };
   }
 
@@ -47,6 +53,8 @@ class UserProfile {
       role: userRoleFromString(data['role'] as String? ?? 'peserta'),
       phone: data['phone'] as String?,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      faceEmbedding: (data['faceEmbedding'] as List<dynamic>?)?.map((e) => (e as num).toDouble()).toList(),
+      faceImage: data['faceImage'] as String?,
     );
   }
 }
